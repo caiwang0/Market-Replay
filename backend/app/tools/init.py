@@ -1,10 +1,6 @@
 from langchain_core.tools import tool
 from langchain_core.messages import AIMessage, ToolMessage
-
-import app.tools.internal_document as document_tool
-import app.tools.web_search as web_tool
-import app.tools.planner as planner_tool   
-import app.tools.lark_meeting_management.meeting_scheduler as meeting_tool
+import app.tools.test as test
 
 @tool
 async def final_answer(answer: str, tools_used: list[str]) -> dict[str, str | list[str]]:
@@ -12,11 +8,9 @@ async def final_answer(answer: str, tools_used: list[str]) -> dict[str, str | li
     return {"answer": answer, "tools_used": tools_used}
 
 tool_lists = [
-    # document_tool.internaldocs, 
-    document_tool.search_internal_documents,
-    # document_tool.getDocsRawContent, document_tool.getBaseRawContent, 
-    # planner_tool.schedule_meeting,
-    # web_tool.serpapi, meeting_tool.schedule_meeting,
+    test.getLatestBBCNews,
+    test.getLatestReutersNews,
+    test.getEarningsCalendar,
     final_answer
 ]
 name2tool = {tool.name: tool.coroutine for tool in tool_lists}

@@ -5,8 +5,6 @@ from fastapi import Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-import app.api.user.utils as User
-import app.api.auth.utils as Auth
 from app.database.init import get_db
 from app.database.chat import ChatDB
 import app.models.api.chat as ChatAPIModel
@@ -22,21 +20,17 @@ async def ping():
 
 @router.post("/invoke")
 async def invoke(body_req: ChatAPIModel.InvokeRequest, http_req: Request, db: Session = Depends(get_db)):
-    # validate user
-    token = Auth.get_jwt_from_cookies(http_req)
-    user = User.get_user_by_jwt(token, db)
-    
     chat_db = ChatDB(db)
-    user_chat = chat_db.get_user_chat_by_chat_uuid(user.id, body_req.chat_uuid)
-    if not (user_chat): # create new chat if not exist
-        raise HTTPException(status_code=404, detail="Chat not found in database")
+    user_chat = chat_db.get_chat_by_uuid(body_req.chat_uuid)
+    if not user_chat: # create new chat if not exist
+        user_chat = chat_db.create_chat(title=body_req.query[:50])
     
     queue: asyncio.Queue = asyncio.Queue()
     streamer = QueueCallbackHandler(queue)
     
     # return the streaming response
     return StreamingResponse(
-        token_generator(body_req.query, streamer, user_chat.id, user.id, db),
+        token_generator(body_req.query, streamer, user_chat.id, db),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -52,14 +46,12 @@ async def get_chat_history(
     chat_uuid: str = Query(None),
     db: Session = Depends(get_db)):
 
-    token = Auth.get_jwt_from_cookies(http_req)
-    user = User.get_user_by_jwt(token, db)
     messages_slice = []
 
     chat_db = ChatDB(db)
-    user_chat = chat_db.get_user_chat_by_chat_uuid(user.id, chat_uuid)
-    if not (user_chat):
-        raise HTTPException(status_code=401, detail="Missing token")
+    user_chat = chat_db.get_chat_by_uuid(chat_uuid)
+    if not user_chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
 
     chat_history = chat_db.get_chat_messages(user_chat.id, offset, limit)
 
@@ -72,7 +64,7 @@ async def get_chat_history(
 
     return JSONResponse({
         "messages": messages_slice,
-        "has_more": len(messages_slice) > 0
+        "has_more": len(chat_history) == limit  # True if we got the full limit, meaning there might be more
     })
 
 @router.post("/create")
@@ -82,15 +74,13 @@ async def create_new_chat(
     db: Session = Depends(get_db),
 ):
     """
-    Create a new chat session for the authenticated user.
+    Create a new chat session
     """
     try:
-        token = Auth.get_jwt_from_cookies(http_req)
-        user = User.get_user_by_jwt(token, db)
         chat_db = ChatDB(db)
 
         # Create chat first with a placeholder title
-        chat = chat_db.create_chat(user.id, title="Untitled Chat")
+        chat = chat_db.create_chat(title="Untitled Chat")
         # Start async task to generate and update the chat title in the background
         async def update_title():
             try:
@@ -115,12 +105,9 @@ async def get_chat_lists(
     db: Session = Depends(get_db)
 ):
     try:
-        token = Auth.get_jwt_from_cookies(http_req)
-        user = User.get_user_by_jwt(token, db)
-        
         chat_db = ChatDB(db)
         skip = (page - 1) * size
-        chats = chat_db.get_user_chats(user.id, skip=skip, limit=size)
+        chats = chat_db.get_all_chats(skip=skip, limit=size)
         
         return {
             "chats": [
@@ -136,17 +123,12 @@ async def get_chat_lists(
             ],
             "page": page,
             "size": size,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "name": user.name
-            }
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error getting user chats: {e}")
+        print(f"Error getting chats: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 # @router.get("/chat/{chat_id}")

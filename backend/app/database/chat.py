@@ -2,7 +2,6 @@ import uuid
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 
-from app.models.database.user import User as UserDBModel
 from app.models.database.chat import Chat as ChatDBModel
 from app.models.database.chat import ChatMessage as MessageDBModel
 
@@ -11,20 +10,19 @@ class ChatDB:
         self.db = db
     
     # Chat Operations
-    def get_user_latest_chat(self, user_id: int) -> ChatDBModel:
-        """Get the most recently updated chat for a user"""
+    def get_latest_chat(self) -> ChatDBModel:
+        """Get the most recently updated chat (no user restriction)"""
         return (
             self.db.query(ChatDBModel)
-            .filter(ChatDBModel.user_id == user_id)
             .order_by(ChatDBModel.updated_at.desc())
             .first()
         )
 
-    def get_user_chat_by_chat_uuid(self, user_id: int, chat_uuid: str) -> Optional[ChatDBModel]:
-        """Get a chat by chat_uuid that belongs to a specific user"""
+    def get_chat_by_uuid(self, chat_uuid: str) -> Optional[ChatDBModel]:
+        """Get a chat by chat_uuid (no user restriction)"""
         return (
             self.db.query(ChatDBModel)
-            .filter(ChatDBModel.chat_uuid == chat_uuid, ChatDBModel.user_id == user_id)
+            .filter(ChatDBModel.chat_uuid == chat_uuid)
             .first()
         )
 
@@ -34,13 +32,9 @@ class ChatDB:
             MessageDBModel.chat_id == chat_id
         ).order_by(MessageDBModel.created_at.desc()).offset(offset).limit(limit).all()
     
-    def create_chat(self, user_id: int, title: str = None) -> ChatDBModel:
-        """Create a new chat session for a user"""
-        user = self.db.query(UserDBModel).filter(UserDBModel.id == user_id).first()
-        if not user:
-            raise ValueError(f"User with id {user_id} not found")
-        
-        chat = ChatDBModel(user_id=user_id, title=title, chat_uuid=str(uuid.uuid4()))
+    def create_chat(self, title: str = None) -> ChatDBModel:
+        """Create a new chat session (no user restriction)"""
+        chat = ChatDBModel(title=title, chat_uuid=str(uuid.uuid4()))
         self.db.add(chat)
         self.db.commit()
         self.db.refresh(chat)
@@ -51,11 +45,11 @@ class ChatDB:
         return self.db.query(ChatDBModel).filter(ChatDBModel.id == chat_id).first()
 
 
-    def get_user_chats(self, user_id: int, skip: int = 0, limit: int = 50) -> List[ChatDBModel]:
-        """Get all chats for a user"""
-        return self.db.query(ChatDBModel).filter(
-            ChatDBModel.user_id == user_id
-        ).order_by(ChatDBModel.updated_at.desc()).offset(skip).limit(limit).all()
+    def get_all_chats(self, skip: int = 0, limit: int = 50) -> List[ChatDBModel]:
+        """Get all chats (no user restriction)"""
+        return self.db.query(ChatDBModel).order_by(
+            ChatDBModel.updated_at.desc()
+        ).offset(skip).limit(limit).all()
     
     def update_chat_title(self, chat_id: int, title: str) -> Optional[ChatDBModel]:
         """Update chat title"""

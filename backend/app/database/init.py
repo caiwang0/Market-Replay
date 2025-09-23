@@ -58,12 +58,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # ---------------------------------------------------------
 # Create tables
 # ---------------------------------------------------------
-from app.models.database import user, chat, meeting_record  # Import your model files here
+from app.models.database import chat
 
 def create_all_tables():
     try:
         Base.metadata.create_all(bind=engine)
-        print("Checked/created all tables (including meeting_records).")
+        print("Checked/created all tables (chat table only).")
     except Exception as e:
         print(f"Error creating tables: {e}")
         raise

@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 import app.config as config
 import app.services.openai as services_openai 
-import app.services.redis as services_redis
 import app.tools.init as tool 
 import app.chains.utils as chain_utils
 from app.database.chat import ChatDB
@@ -155,24 +154,19 @@ class CustomAgentExecutor:
             steps=steps
         )
 
-        # Update Redis memory
-        human_msg = HumanMessage(content=input)
-        ai_msg = AIMessage(content=final_answer or "No answer found")
-        chat_history_key = chain_utils.CHAT_HISTORY_REDIS_KEY.format(user_id, chat_id)
-        services_redis.append_list(chat_history_key, chain_utils.serialize_history_message(human_msg), chain_utils.CHAT_HISTORY_MAX_MESSAGES, chain_utils.CHAT_HISTORY_TTL_SECONDS)
-        services_redis.append_list(chat_history_key, chain_utils.serialize_history_message(ai_msg), chain_utils.CHAT_HISTORY_MAX_MESSAGES, chain_utils.CHAT_HISTORY_TTL_SECONDS)
+        # Redis removed - chat history is stored in database only
         
         # return the final answer in dict form
         return final_answer_call if final_answer else {"answer": "No answer found", "tools_used": []}
 
 agent_executor = CustomAgentExecutor()  
 
-async def token_generator(content: str, streamer: QueueCallbackHandler, chat_id: int, user_id:int, db: Session):
+async def token_generator(content: str, streamer: QueueCallbackHandler, chat_id: int, db: Session):
     task = asyncio.create_task(agent_executor.invoke(
         input=content,
         streamer=streamer,
         chat_id=chat_id,
-        user_id=user_id,
+        user_id="default",
         db=db,
         verbose=True # set to True to see verbose output in console
     ))

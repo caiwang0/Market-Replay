@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
-import RequireAuth from "@/components/RequireAuth";
-
 
 const inter = Inter({
   subsets: ['latin'],
@@ -10,8 +8,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Sofi Agent",
-  description: "",
+  title: "Market Replay Trading Agent",
+  description: "AI-powered trading strategy backtesting agent",
 };
 
 export default function RootLayout({
@@ -22,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <RequireAuth>{children}</RequireAuth>
+        {children}
       </body>
     </html>
   );
