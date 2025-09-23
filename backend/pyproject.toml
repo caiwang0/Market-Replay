@@ -1,0 +1,18 @@
+[project]
+name = "sofi-langchain"
+version = "1.0.0"
+description = "Sofi LangChain Chat Agent Backend"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "aiohttp",
+    "langchain",
+    "langchain-openai",
+    "langchain-community",
+    "chromadb",
+    "pydantic",
+    "python-dotenv"
+]
+
+[tool.uv]
+# Optional uv config

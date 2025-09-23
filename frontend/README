@@ -1,0 +1,27 @@
+Project Structure
+
+src/
+│
+├── app/                        # App routes (already correct)
+│   ├── page.tsx                # Home page
+│   ├── login/
+│   │   └── page.tsx            # Login page
+│
+├── components/                 # Reusable UI components
+│   ├── TextArea.tsx
+│   ├── Output.tsx
+│   ├── AuthProvider.tsx
+│   └── MarkdownRenderer.tsx
+│
+├── api/                         # Logic & API calls
+│   ├── auth.ts                  # Auth-related functions (login, session, etc)
+│   └── chat.ts                  # Chat-related API calls (create, send message, etc)
+│
+├── constants/                   # Shared constants
+│   └── config.ts                # `apiBaseUrl`, endpoint paths
+│
+├── types/                       # TypeScript definitions
+│   └── index.ts                 # (or Chat.ts, User.ts, etc)
+│
+├── styles/                      # Global or module CSS (optional)
+│   └── globals.css
